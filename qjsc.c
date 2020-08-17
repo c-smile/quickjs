@@ -27,10 +27,12 @@
 #include <inttypes.h>
 #include <string.h>
 #include <assert.h>
-#include <unistd.h>
 #include <errno.h>
 #if !defined(_WIN32)
-#include <sys/wait.h>
+  #include <sys/wait.h>
+  #include <unistd.h>
+#else
+  #include "win/getopt.h"
 #endif
 
 #include "cutils.h"
@@ -726,3 +728,4 @@ int main(int argc, char **argv)
     namelist_free(&init_module_list);
     return 0;
 }
+

@@ -28,14 +28,31 @@
 #include <stdlib.h>
 #include <inttypes.h>
 
+#ifdef _MSC_VER
+  #include <windows.h>
+  #include <intrin.h>
+#else 
+  #include <sys/time.h>
+#endif
+
 /* set if CPU is big endian */
 #undef WORDS_BIGENDIAN
 
-#define likely(x)       __builtin_expect(!!(x), 1)
-#define unlikely(x)     __builtin_expect(!!(x), 0)
-#define force_inline inline __attribute__((always_inline))
-#define no_inline __attribute__((noinline))
-#define __maybe_unused __attribute__((unused))
+#ifdef _MSC_VER
+  #define likely(x)    (x)
+  #define unlikely(x)  (x)
+  #define force_inline __forceinline
+  #define no_inline __declspec(noinline)
+  #define __maybe_unused
+  #define __attribute__(x)
+  typedef size_t ssize_t;
+#else
+  #define likely(x)       __builtin_expect(!!(x), 1)
+  #define unlikely(x)     __builtin_expect(!!(x), 0)
+  #define force_inline inline __attribute__((always_inline))
+  #define no_inline __attribute__((noinline))
+  #define __maybe_unused __attribute__((unused))
+#endif
 
 #define xglue(x, y) x ## y
 #define glue(x, y) xglue(x, y)
@@ -114,27 +131,66 @@ static inline int64_t min_int64(int64_t a, int64_t b)
 /* WARNING: undefined if a = 0 */
 static inline int clz32(unsigned int a)
 {
+#ifdef _MSC_VER
+    unsigned long idx;
+    _BitScanReverse(&idx, a);
+    return 31 ^ idx;
+#else
     return __builtin_clz(a);
+#endif
 }
 
 /* WARNING: undefined if a = 0 */
 static inline int clz64(uint64_t a)
 {
+#ifdef _MSC_VER
+    unsigned long idx;
+    _BitScanReverse64(&idx, a);
+    return 63 ^ idx;
+#else
     return __builtin_clzll(a);
+#endif
 }
 
 /* WARNING: undefined if a = 0 */
 static inline int ctz32(unsigned int a)
 {
+#ifdef _MSC_VER
+    unsigned long idx;
+    _BitScanForward(&idx, a);
+    return 31 ^ idx;
+#else
     return __builtin_ctz(a);
+#endif
 }
 
 /* WARNING: undefined if a = 0 */
 static inline int ctz64(uint64_t a)
 {
+#ifdef _MSC_VER
+    unsigned long idx;
+    _BitScanForward64(&idx, a);
+    return 63 ^ idx;
+#else
     return __builtin_ctzll(a);
+#endif
 }
 
+#ifdef _MSC_VER
+#pragma pack(push, 1)
+struct packed_u64 {
+    uint64_t v;
+};
+
+struct packed_u32 {
+    uint32_t v;
+};
+
+struct packed_u16 {
+    uint16_t v;
+};
+#pragma pack(pop)
+#else
 struct __attribute__((packed)) packed_u64 {
     uint64_t v;
 };
@@ -146,6 +202,7 @@ struct __attribute__((packed)) packed_u32 {
 struct __attribute__((packed)) packed_u16 {
     uint16_t v;
 };
+#endif
 
 static inline uint64_t get_u64(const uint8_t *tab)
 {
@@ -262,8 +319,9 @@ static inline int dbuf_put_u64(DynBuf *s, uint64_t val)
 {
     return dbuf_put(s, (uint8_t *)&val, 8);
 }
+
 int __attribute__((format(printf, 2, 3))) dbuf_printf(DynBuf *s,
-                                                      const char *fmt, ...);
+                                                        const char *fmt, ...);
 void dbuf_free(DynBuf *s);
 static inline BOOL dbuf_error(DynBuf *s) {
     return s->error;

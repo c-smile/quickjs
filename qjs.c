@@ -28,7 +28,9 @@
 #include <inttypes.h>
 #include <string.h>
 #include <assert.h>
-#include <unistd.h>
+#ifndef _MSC_VER
+  #include <unistd.h>
+#endif
 #include <errno.h>
 #include <fcntl.h>
 #include <time.h>
@@ -549,3 +551,4 @@ int main(int argc, char **argv)
     JS_FreeRuntime(rt);
     return 1;
 }
+

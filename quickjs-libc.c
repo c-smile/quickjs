@@ -28,20 +28,24 @@
 #include <inttypes.h>
 #include <string.h>
 #include <assert.h>
-#include <unistd.h>
 #include <errno.h>
 #include <fcntl.h>
-#include <sys/time.h>
 #include <time.h>
 #include <signal.h>
 #include <limits.h>
 #include <sys/stat.h>
-#include <dirent.h>
 #if defined(_WIN32)
-#include <windows.h>
-#include <conio.h>
-#include <utime.h>
+  #include <windows.h>
+  #include <conio.h>
+  #include <sys/utime.h>
+  #include "win/dirent.h"
+  #ifndef PATH_MAX
+    #define PATH_MAX MAX_PATH
+  #endif
 #else
+  #include <dirent.h>
+  #include <unistd.h>
+  #include <sys/time.h>
 #include <dlfcn.h>
 #include <termios.h>
 #include <sys/ioctl.h>
@@ -698,7 +702,9 @@ static JSClassID js_std_file_class_id;
 typedef struct {
     FILE *f;
     BOOL close_in_finalizer;
+#ifndef _MSC_VER
     BOOL is_popen;
+#endif
 } JSSTDFile;
 
 static void js_std_file_finalizer(JSRuntime *rt, JSValue val)
@@ -706,9 +712,11 @@ static void js_std_file_finalizer(JSRuntime *rt, JSValue val)
     JSSTDFile *s = JS_GetOpaque(val, js_std_file_class_id);
     if (s) {
         if (s->f && s->close_in_finalizer) {
+#ifndef _MSC_VER
             if (s->is_popen)
                 pclose(s->f);
             else
+#endif
                 fclose(s->f);
         }
         js_free_rt(rt, s);
@@ -761,7 +769,9 @@ static JSValue js_new_std_file(JSContext *ctx, FILE *f,
         return JS_EXCEPTION;
     }
     s->close_in_finalizer = close_in_finalizer;
+#ifndef _MSC_VER
     s->is_popen = is_popen;
+#endif
     s->f = f;
     JS_SetOpaque(obj, s);
     return obj;
@@ -810,6 +820,7 @@ static JSValue js_std_open(JSContext *ctx, JSValueConst this_val,
     return JS_EXCEPTION;
 }
 
+#ifndef _MSC_VER
 static JSValue js_std_popen(JSContext *ctx, JSValueConst this_val,
                             int argc, JSValueConst *argv)
 {
@@ -845,6 +856,7 @@ static JSValue js_std_popen(JSContext *ctx, JSValueConst this_val,
     JS_FreeCString(ctx, mode);
     return JS_EXCEPTION;
 }
+#endif
 
 static JSValue js_std_fdopen(JSContext *ctx, JSValueConst this_val,
                              int argc, JSValueConst *argv)
@@ -950,8 +962,10 @@ static JSValue js_std_file_close(JSContext *ctx, JSValueConst this_val,
         return JS_EXCEPTION;
     if (!s->f)
         return JS_ThrowTypeError(ctx, "invalid file handle");
+#ifndef _WIN32
     if (s->is_popen)
         err = js_get_errno(pclose(s->f));
+#endif
     else
         err = js_get_errno(fclose(s->f));
     s->f = NULL;
@@ -1220,6 +1234,7 @@ static int http_get_status(const char *buf)
     return atoi(p);
 }
 
+#ifndef _MSC_VER
 static JSValue js_std_urlGet(JSContext *ctx, JSValueConst this_val,
                              int argc, JSValueConst *argv)
 {
@@ -1366,6 +1381,7 @@ static JSValue js_std_urlGet(JSContext *ctx, JSValueConst this_val,
     JS_FreeValue(ctx, response);
     return JS_EXCEPTION;
 }
+#endif
 
 static JSClassDef js_std_file_class = {
     "FILE",
@@ -1395,14 +1411,18 @@ static const JSCFunctionListEntry js_std_funcs[] = {
     JS_CFUNC_DEF("evalScript", 1, js_evalScript ),
     JS_CFUNC_DEF("loadScript", 1, js_loadScript ),
     JS_CFUNC_DEF("getenv", 1, js_std_getenv ),
+#ifndef _MSC_VER
     JS_CFUNC_DEF("urlGet", 1, js_std_urlGet ),
+#endif
     JS_CFUNC_DEF("loadFile", 1, js_std_loadFile ),
     JS_CFUNC_DEF("strerror", 1, js_std_strerror ),
     JS_CFUNC_DEF("parseExtJSON", 1, js_std_parseExtJSON ),
     
     /* FILE I/O */
     JS_CFUNC_DEF("open", 2, js_std_open ),
+#ifndef _MSC_VER
     JS_CFUNC_DEF("popen", 2, js_std_popen ),
+#endif
     JS_CFUNC_DEF("fdopen", 2, js_std_fdopen ),
     JS_CFUNC_DEF("tmpfile", 0, js_std_tmpfile ),
     JS_CFUNC_MAGIC_DEF("puts", 1, js_std_file_puts, 0 ),
@@ -1856,6 +1876,11 @@ static int64_t get_time_ms(void)
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return (uint64_t)ts.tv_sec * 1000 + (ts.tv_nsec / 1000000);
+}
+#elif defined(_MSC_VER)
+static int64_t get_time_ms(void)
+{
+	return GetTickCount();
 }
 #else
 /* more portable, but does not work if the date is updated */
@@ -3771,3 +3796,4 @@ void js_std_eval_binary(JSContext *ctx, const uint8_t *buf, size_t buf_len,
         JS_FreeValue(ctx, val);
     }
 }
+
