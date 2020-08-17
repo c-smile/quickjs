@@ -3,9 +3,11 @@
 # QuickJS Javascript Engine 
 
 Version: 2020-07-05
+
 Authors: Fabrice Bellard and Charlie Gordon
 
 Ported from https://bellard.org/quickjs/ 
+
 By Andrew Fedioniouk (a.k.a. c-smile)
 
 This version is Microsoft Visual C++ compatible/compileable.
