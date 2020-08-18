@@ -5,11 +5,22 @@ workspace "quickjs-msvc"
 	-- Premake output folder
 	location(path.join(".build", _ACTION))
 
-	-- Target architecture
-	architecture "x86_64"
+	platforms { "x86", "x64", "arm32", "arm64"  } 
 
 	-- Configuration settings
 	configurations { "Debug", "Release" }
+
+	filter "platforms:x86"
+  	architecture "x86"
+	filter "platforms:x64"
+  	architecture "x86_64"  
+	filter "platforms:arm32"
+  	architecture "ARM"  
+	filter "platforms:arm64"
+  	architecture "ARM64"  
+
+	filter "system:windows"
+  	removeplatforms { "arm32" }  
 
 	-- Debug configuration
 	filter { "configurations:Debug" }
@@ -31,10 +42,10 @@ workspace "quickjs-msvc"
 
 	filter { }
 		targetdir ".bin/%{cfg.longname}/"
-		defines { "WIN32", "_AMD64_", "__x86_64__" }
+		--defines { "WIN32", "_AMD64_", "__x86_64__" }
 		exceptionhandling "Off"
 		rtti "Off"
-		vectorextensions "AVX2"
+		--vectorextensions "AVX2"
 
   defines { "CONFIG_VERSION=\"2020-07-05\""}
 
