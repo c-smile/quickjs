@@ -36,13 +36,11 @@ workspace "quickjs-msvc"
 
 	filter { "language:not C#" }
 		defines { "_CRT_SECURE_NO_WARNINGS" }
-		characterset ("MBCS")
 		buildoptions { "/std:c++latest" }
 		systemversion "latest"
 
 	filter { }
 		targetdir ".bin/%{cfg.longname}/"
-		--defines { "WIN32", "_AMD64_", "__x86_64__" }
 		exceptionhandling "Off"
 		rtti "Off"
 		--vectorextensions "AVX2"
