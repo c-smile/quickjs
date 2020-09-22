@@ -1,6 +1,13 @@
 
 -----------------------------------------------------------------------------------------------------------------------
 
+function getQuickJSVersion()
+  local file = io.open("VERSION", "r")
+  local vers = file:read();
+  file:close();
+  return vers:gsub("%s+", "")
+end  
+
 workspace "quickjs-msvc"
 	-- Premake output folder
 	location(path.join(".build", _ACTION))
@@ -45,7 +52,7 @@ workspace "quickjs-msvc"
 		rtti "Off"
 		--vectorextensions "AVX2"
 
-  defines { "CONFIG_VERSION=\"2020-07-05\""}
+  defines { "CONFIG_VERSION=\"" .. getQuickJSVersion() .. "\""}
 
 -----------------------------------------------------------------------------------------------------------------------
 
