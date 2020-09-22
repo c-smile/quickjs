@@ -1,12 +1,17 @@
 
 -----------------------------------------------------------------------------------------------------------------------
 
-function getQuickJSVersion()
+(function()
+  -- generate "quickjs-version.h" using VERSION file
   local file = io.open("VERSION", "r")
-  local vers = file:read();
-  file:close();
-  return vers:gsub("%s+", "")
-end  
+  local vers = file:read()
+  file:close()
+  vars = vers:gsub("%s+", "")
+  file = io.open("quickjs-version.h", "w+")
+  file:write("#define QUICKJS_VERSION \"" .. vers .. "\"\r\n")
+  file:close()
+end)()  
+
 
 workspace "quickjs-msvc"
 	-- Premake output folder
@@ -51,8 +56,6 @@ workspace "quickjs-msvc"
 		exceptionhandling "Off"
 		rtti "Off"
 		--vectorextensions "AVX2"
-
-  defines { "CONFIG_VERSION=\"" .. getQuickJSVersion() .. "\""}
 
 -----------------------------------------------------------------------------------------------------------------------
 
