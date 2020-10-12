@@ -1,4 +1,5 @@
-
+> **⚠ WARNING: Obsolete repository.**  
+> Please use newer one https://github.com/c-smile/quickjspp.
 
 # QuickJS Javascript Engine 
 
